@@ -415,7 +415,7 @@ func (sc *StepContext) runAction(actionDir string, actionPath string) common.Exe
 				if err != nil {
 					return err
 				}
-				err = rc.JobContainer.CopyDir(containerActionDir+"/", actionDir)(ctx)
+				err = rc.JobContainer.CopyDir(containerActionDir+"/", actionDir, rc.Config.UseGitIgnore)(ctx)
 				if err != nil {
 					return err
 				}
@@ -539,7 +539,6 @@ func (sc *StepContext) runAction(actionDir string, actionPath string) common.Exe
 				// Interpolate the outer inputs into the composite step with items
 				exprEval := sc.NewExpressionEvaluator()
 				for k, v := range stepContext.Step.With {
-
 					if strings.Contains(v, "inputs") {
 						stepContext.Step.With[k] = exprEval.Interpolate(v)
 					}
