@@ -144,8 +144,9 @@ func (rc *RunContext) startJobContainer() common.Executor {
 			rc.stopJobContainer(),
 			rc.JobContainer.Create(),
 			rc.JobContainer.Start(false),
+			rc.JobContainer.UpdateFromEnv("/etc/environment", &rc.Env),
 			rc.JobContainer.CopyDir(copyToPath, rc.Config.Workdir+string(filepath.Separator)+".", rc.Config.UseGitIgnore).IfBool(copyWorkspace),
-			rc.JobContainer.Copy(rc.Config.ContainerWorkdir(), &container.FileEntry{
+			rc.JobContainer.Copy("/tmp/", &container.FileEntry{
 				Name: "workflow/event.json",
 				Mode: 0644,
 				Body: rc.EventJSON,
@@ -154,7 +155,7 @@ func (rc *RunContext) startJobContainer() common.Executor {
 				Mode: 0644,
 				Body: "",
 			}, &container.FileEntry{
-				Name: "home/.act",
+				Name: "workflow/paths.txt",
 				Mode: 0644,
 				Body: "",
 			}),
@@ -229,7 +230,7 @@ func (rc *RunContext) newStepExecutor(step *model.Step) common.Executor {
 			Success: true,
 			Outputs: make(map[string]string),
 		}
-		runStep, err := rc.EvalBool(sc.Step.If)
+		runStep, err := rc.EvalBool(sc.Step.If.Value)
 
 		if err != nil {
 			common.Logger(ctx).Errorf("  \u274C  Error in if: expression - %s", sc.Step)
@@ -243,7 +244,7 @@ func (rc *RunContext) newStepExecutor(step *model.Step) common.Executor {
 		}
 
 		if !runStep {
-			log.Debugf("Skipping step '%s' due to '%s'", sc.Step.String(), sc.Step.If)
+			log.Debugf("Skipping step '%s' due to '%s'", sc.Step.String(), sc.Step.If.Value)
 			return nil
 		}
 
@@ -298,13 +299,13 @@ func (rc *RunContext) platformImage() string {
 func (rc *RunContext) isEnabled(ctx context.Context) bool {
 	job := rc.Run.Job()
 	l := common.Logger(ctx)
-	runJob, err := rc.EvalBool(job.If)
+	runJob, err := rc.EvalBool(job.If.Value)
 	if err != nil {
 		common.Logger(ctx).Errorf("  \u274C  Error in if: expression - %s", job.Name)
 		return false
 	}
 	if !runJob {
-		l.Debugf("Skipping job '%s' due to '%s'", job.Name, job.If)
+		l.Debugf("Skipping job '%s' due to '%s'", job.Name, job.If.Value)
 		return false
 	}
 
@@ -475,17 +476,20 @@ func (rc *RunContext) getGithubContext() *githubContext {
 	if !ok {
 		token = os.Getenv("GITHUB_TOKEN")
 	}
+
 	runID := rc.Config.Env["GITHUB_RUN_ID"]
 	if runID == "" {
 		runID = "1"
 	}
+
 	runNumber := rc.Config.Env["GITHUB_RUN_NUMBER"]
 	if runNumber == "" {
 		runNumber = "1"
 	}
+
 	ghc := &githubContext{
 		Event:     make(map[string]interface{}),
-		EventPath: fmt.Sprintf("%s/%s", rc.Config.ContainerWorkdir(), "workflow/event.json"),
+		EventPath: "/tmp/workflow/event.json",
 		Workflow:  rc.Run.Workflow.Name,
 		RunID:     runID,
 		RunNumber: runNumber,
@@ -627,7 +631,8 @@ func withDefaultBranch(b string, event map[string]interface{}) map[string]interf
 func (rc *RunContext) withGithubEnv(env map[string]string) map[string]string {
 	github := rc.getGithubContext()
 	env["CI"] = "true"
-	env["GITHUB_ENV"] = fmt.Sprintf("%s/%s", rc.Config.ContainerWorkdir(), "workflow/envs.txt")
+	env["GITHUB_ENV"] = "/tmp/workflow/envs.txt"
+	env["GITHUB_PATH"] = "/tmp/workflow/paths.txt"
 	env["GITHUB_WORKFLOW"] = github.Workflow
 	env["GITHUB_RUN_ID"] = github.RunID
 	env["GITHUB_RUN_NUMBER"] = github.RunNumber
