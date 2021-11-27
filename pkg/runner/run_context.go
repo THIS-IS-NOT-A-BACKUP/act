@@ -52,9 +52,44 @@ func (rc *RunContext) String() string {
 	return fmt.Sprintf("%s/%s", rc.Run.Workflow.Name, rc.Name)
 }
 
+type stepStatus int
+
+const (
+	stepStatusSuccess stepStatus = iota
+	stepStatusFailure
+)
+
+var stepStatusStrings = [...]string{
+	"success",
+	"failure",
+}
+
+func (s stepStatus) MarshalText() ([]byte, error) {
+	return []byte(s.String()), nil
+}
+
+func (s *stepStatus) UnmarshalText(b []byte) error {
+	str := string(b)
+	for i, name := range stepStatusStrings {
+		if name == str {
+			*s = stepStatus(i)
+			return nil
+		}
+	}
+	return fmt.Errorf("invalid step status %q", str)
+}
+
+func (s stepStatus) String() string {
+	if int(s) >= len(stepStatusStrings) {
+		return ""
+	}
+	return stepStatusStrings[s]
+}
+
 type stepResult struct {
-	Success bool              `json:"success"`
-	Outputs map[string]string `json:"outputs"`
+	Outputs    map[string]string `json:"outputs"`
+	Conclusion stepStatus        `json:"conclusion"`
+	Outcome    stepStatus        `json:"outcome"`
 }
 
 // GetEnv returns the env for the context
@@ -118,6 +153,11 @@ func (rc *RunContext) startJobContainer() common.Executor {
 			return true
 		})
 
+		username, password, err := rc.handleCredentials()
+		if err != nil {
+			return fmt.Errorf("failed to handle credentials: %s", err)
+		}
+
 		common.Logger(ctx).Infof("\U0001f680  Start image=%s", image)
 		name := rc.jobContainerName()
 
@@ -134,8 +174,8 @@ func (rc *RunContext) startJobContainer() common.Executor {
 			Entrypoint:  []string{"/usr/bin/tail", "-f", "/dev/null"},
 			WorkingDir:  rc.Config.ContainerWorkdir(),
 			Image:       image,
-			Username:    rc.Config.Secrets["DOCKER_USERNAME"],
-			Password:    rc.Config.Secrets["DOCKER_PASSWORD"],
+			Username:    username,
+			Password:    password,
 			Name:        name,
 			Env:         envList,
 			Mounts:      mounts,
@@ -266,8 +306,9 @@ func (rc *RunContext) newStepExecutor(step *model.Step) common.Executor {
 	return func(ctx context.Context) error {
 		rc.CurrentStep = sc.Step.ID
 		rc.StepResults[rc.CurrentStep] = &stepResult{
-			Success: true,
-			Outputs: make(map[string]string),
+			Outcome:    stepStatusSuccess,
+			Conclusion: stepStatusSuccess,
+			Outputs:    make(map[string]string),
 		}
 		runStep, err := rc.EvalBool(sc.Step.If.Value)
 
@@ -278,7 +319,8 @@ func (rc *RunContext) newStepExecutor(step *model.Step) common.Executor {
 				return err
 			}
 			rc.ExprEval = exprEval
-			rc.StepResults[rc.CurrentStep].Success = false
+			rc.StepResults[rc.CurrentStep].Conclusion = stepStatusFailure
+			rc.StepResults[rc.CurrentStep].Outcome = stepStatusFailure
 			return err
 		}
 
@@ -300,12 +342,13 @@ func (rc *RunContext) newStepExecutor(step *model.Step) common.Executor {
 		} else {
 			common.Logger(ctx).Errorf("  \u274C  Failure - %s", sc.Step)
 
+			rc.StepResults[rc.CurrentStep].Outcome = stepStatusFailure
 			if sc.Step.ContinueOnError {
 				common.Logger(ctx).Infof("Failed but continue next step")
 				err = nil
-				rc.StepResults[rc.CurrentStep].Success = true
+				rc.StepResults[rc.CurrentStep].Conclusion = stepStatusSuccess
 			} else {
-				rc.StepResults[rc.CurrentStep].Success = false
+				rc.StepResults[rc.CurrentStep].Conclusion = stepStatusFailure
 			}
 		}
 		return err
@@ -500,7 +543,7 @@ type jobContext struct {
 func (rc *RunContext) getJobContext() *jobContext {
 	jobStatus := "success"
 	for _, stepStatus := range rc.StepResults {
-		if !stepStatus.Success {
+		if stepStatus.Conclusion == stepStatusFailure {
 			jobStatus = "failure"
 			break
 		}
@@ -797,4 +840,38 @@ func (rc *RunContext) localCheckoutPath() (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func (rc *RunContext) handleCredentials() (username, password string, err error) {
+	// TODO: remove below 2 lines when we can release act with breaking changes
+	username = rc.Config.Secrets["DOCKER_USERNAME"]
+	password = rc.Config.Secrets["DOCKER_PASSWORD"]
+
+	container := rc.Run.Job().Container()
+	if container == nil || container.Credentials == nil {
+		return
+	}
+
+	if container.Credentials != nil && len(container.Credentials) != 2 {
+		err = fmt.Errorf("invalid property count for key 'credentials:'")
+		return
+	}
+
+	ee := rc.NewExpressionEvaluator()
+	var ok bool
+	if username, ok = ee.InterpolateWithStringCheck(container.Credentials["username"]); !ok {
+		err = fmt.Errorf("failed to interpolate container.credentials.username")
+		return
+	}
+	if password, ok = ee.InterpolateWithStringCheck(container.Credentials["password"]); !ok {
+		err = fmt.Errorf("failed to interpolate container.credentials.password")
+		return
+	}
+
+	if container.Credentials["username"] == "" || container.Credentials["password"] == "" {
+		err = fmt.Errorf("container.credentials cannot be empty")
+		return
+	}
+
+	return username, password, err
 }
