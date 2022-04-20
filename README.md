@@ -102,24 +102,10 @@ or through `nix-shell`:
 nix-shell -p act
 ```
 
-### [Go](https://golang.org) (Linux/Windows/macOS/any other platform supported by Go)
-
-If you have Go 1.18+, you can install latest released version of `act` directly from source by running:
+Using the latest [Nix command](https://nixos.wiki/wiki/Nix_command), you can run directly :
 
 ```sh
-go install github.com/nektos/act@latest
-```
-
-or if you want to install latest unreleased version:
-
-```sh
-go install github.com/nektos/act@master
-```
-
-If you want a smaller binary size, run above commands with `-ldflags="-s -w"`
-
-```sh
-go install -ldflags="-s -w" github.com/nektos/act@...
+nix run nixpkgs#act
 ```
 
 ## Other install options
