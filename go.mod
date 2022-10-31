@@ -6,9 +6,9 @@ require (
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/Masterminds/semver v1.5.0
 	github.com/andreaskoch/go-fswatch v1.0.0
-	github.com/docker/cli v20.10.20+incompatible
+	github.com/docker/cli v20.10.21+incompatible
 	github.com/docker/distribution v2.8.1+incompatible
-	github.com/docker/docker v20.10.20+incompatible
+	github.com/docker/docker v20.10.21+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/go-git/go-billy/v5 v5.3.1
 	github.com/go-git/go-git/v5 v5.4.2
@@ -26,7 +26,7 @@ require (
 	github.com/rhysd/actionlint v1.6.21
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/sirupsen/logrus v1.9.0
-	github.com/spf13/cobra v1.6.0
+	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.1
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
