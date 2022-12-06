@@ -171,6 +171,9 @@ func TestRunEvent(t *testing.T) {
 		{workdir, "issue-598", "push", "", platforms},
 		{workdir, "if-env-act", "push", "", platforms},
 		{workdir, "env-and-path", "push", "", platforms},
+		{workdir, "environment-files", "push", "", platforms},
+		{workdir, "GITHUB_STATE", "push", "", platforms},
+		{workdir, "environment-files-parser-bug", "push", "", platforms},
 		{workdir, "non-existent-action", "push", "Job 'nopanic' failed", platforms},
 		{workdir, "outputs", "push", "", platforms},
 		{workdir, "networking", "push", "", platforms},
@@ -284,6 +287,7 @@ func TestRunEventHostEnvironment(t *testing.T) {
 
 		tables = append(tables, []TestJobFileInfo{
 			{workdir, "nix-prepend-path", "push", "", platforms},
+			{workdir, "inputs-via-env-context", "push", "", platforms},
 		}...)
 	}
 
