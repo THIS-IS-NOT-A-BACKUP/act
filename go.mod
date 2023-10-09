@@ -9,7 +9,7 @@ require (
 	github.com/andreaskoch/go-fswatch v1.0.0
 	github.com/creack/pty v1.1.18
 	github.com/docker/cli v24.0.6+incompatible
-	github.com/docker/distribution v2.8.2+incompatible
+	github.com/docker/distribution v2.8.3+incompatible
 	github.com/docker/docker v24.0.6+incompatible // 24.0 branch
 	github.com/docker/go-connections v0.4.0
 	github.com/go-git/go-billy/v5 v5.5.0
@@ -32,7 +32,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/timshannon/bolthold v0.0.0-20210913165410-232392fc8a6a
 	go.etcd.io/bbolt v1.3.7
-	golang.org/x/term v0.12.0
+	golang.org/x/term v0.13.0
 	gopkg.in/yaml.v3 v3.0.1
 	gotest.tools/v3 v3.5.1
 )
@@ -46,6 +46,7 @@ require (
 	github.com/containerd/containerd v1.7.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/distribution/reference v0.5.0 // indirect
 	github.com/docker/docker-credential-helpers v0.7.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
@@ -82,7 +83,7 @@ require (
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/net v0.15.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
